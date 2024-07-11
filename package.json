@@ -1,9 +1,14 @@
 {
   "name": "@alexkratky/rpi-info",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Detect Raspberry Pi model",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexKratky/rpi-info.git"
+  },
+  "homepage": "https://github.com/AlexKratky/rpi-info",
   "scripts": {
     "build": "tsc",
     "test": "jest"
