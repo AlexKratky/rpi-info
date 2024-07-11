@@ -1,11 +1,19 @@
-# raspberrypi-info
+# @alexkratky/rpi-info
 
 A simple package to detect if your app is currently running on Raspberry Pi and also to detect which one.
+
+## Installation
+
+```bash
+npm i @alexkratky/rpi-info
+# or
+yarn add @alexkratky/rpi-info
+```
 
 ## Usage
 
 ```ts
-import { RaspberryPiInfo } from 'raspberrypi-info';
+import { RaspberryPiInfo } from '@alexkratky/rpi-info';
 
 const raspberryPiInfo = new RaspberryPiInfo();
 
@@ -45,7 +53,7 @@ on non-Raspberry Pi device the output will be:
 This package uses detection based on revision code presented in `/proc/cpuinfo` (you can list that on your machine by typing `cat /proc/cpuinfo` in your terminal) and uses that revision code to detect which model you are currently using. I will try to keep the list updated, but in case there is a new version of Raspberry Pi, or some custom, you can always pass additional revision codes to the constructor as the first parameter (You can add a completly new one, or override the existing):
 
 ```ts
-import { RaspberryPiInfo } from 'raspberrypi-info';
+import { RaspberryPiInfo } from '@alexkratky/rpi-info';
 
 const raspberryPiInfo = new RaspberryPiInfo(
     {'c04170': { model: '0', ram: '128GB', manufacturer: 'Custom' }},
@@ -73,7 +81,7 @@ Expected output on Raspberry Pi device:
 By default, the fullModelName and fullModelNameWithRam start with 'Raspberry Pi', you can modify this behavior by passing the base name to the constructor as a second parameter:
 
 ```ts
-import { RaspberryPiInfo } from 'raspberrypi-info';
+import { RaspberryPiInfo } from '@alexkratky/rpi-info';
 
 const raspberryPiInfo = new RaspberryPiInfo({}, 'Custom PI');
 
@@ -94,6 +102,17 @@ Expected output on Raspberry Pi device:
 }
 ```
 
+### Usage in commonjs
+
+Recommended usage is in the module, but if you are using CommonJS, the import and the usage should look like this:
+
+```ts
+const rpiInfo = require('@alexkratky/rpi-info');
+
+const raspberryPiInfo = new rpiInfo.RaspberryPiInfo();
+
+console.log(raspberryPiInfo.detect());
+```
 
 ## Contributing
 
@@ -101,4 +120,4 @@ Pull requests are always welcomed.
 
 ## With ❤️ by Alex Kratky
 
-[Contact webpage](https://alexkratky.com/)
+[Contact webpage](https://alexkratky.com/)¨
