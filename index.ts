@@ -4,6 +4,7 @@ interface PiModel {
     model: string;
     ram: string;
     manufacturer: string;
+    revision?: string;
 }
 
 // Define the type for the overall object using a mapped type
@@ -11,7 +12,7 @@ type RevisionsData = {
     [key: string]: PiModel;
 }
 
-/** @see https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes */
+/** @see https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes-in-use */
 export const revisions: RevisionsData = {
     '900021': { model: 'A+', ram: '512MB', manufacturer: 'Sony UK' },
     '900032': { model: 'B+', ram: '512MB', manufacturer: 'Sony UK' },
@@ -56,7 +57,18 @@ export const revisions: RevisionsData = {
     'd03140': { model: 'CM4', ram: '8GB', manufacturer: 'Sony UK' },
     '902120': { model: 'Zero 2 W', ram: '512MB', manufacturer: 'Sony UK' },
     'c04170': { model: '5', ram: '4GB', manufacturer: 'Sony UK' },
-    'd04170': { model: '5', ram: '8GB', manufacturer: 'Sony UK' }
+    'd04170': { model: '5', ram: '8GB', manufacturer: 'Sony UK' },
+    'b04171': {model: '5', revision: '1.1', ram: '2GB', manufacturer: 'Sony UK'},
+    'c04171': {model: '5', revision: '1.1', ram: '4GB', manufacturer: 'Sony UK'},
+    'd04171': {model: '5', revision: '1.1', ram: '8GB', manufacturer: 'Sony UK'},
+    'e04171': {model: '5', revision: '1.1', ram: '16GB', manufacturer: 'Sony UK'},
+    'b04180': {model: 'CM5', revision: '1.0', ram: '2GB', manufacturer: 'Sony UK'},
+    'c04180': {model: 'CM5', revision: '1.0', ram: '4GB', manufacturer: 'Sony UK'},
+    'd04180': {model: 'CM5', revision: '1.0', ram: '8GB', manufacturer: 'Sony UK'},
+    'd04190': {model: '500', revision: '1.0', ram: '8GB', manufacturer: 'Sony UK'},
+    'b041a0': {model: 'CM5 Lite', revision: '1.0', ram: '2GB', manufacturer: 'Sony UK'},
+    'c041a0': {model: 'CM5 Lite', revision: '1.0', ram: '4GB', manufacturer: 'Sony UK'},
+    'd041a0': {model: 'CM5 Lite', revision: '1.0', ram: '8GB', manufacturer: 'Sony UK'},
 };
 export type RaspberryPiInfoResult = {
     isRaspberry: boolean,
