@@ -5,7 +5,60 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RaspberryPiInfo = exports.revisions = void 0;
 const fs_1 = __importDefault(require("fs"));
-/** @see https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes */
+/** Lookup table for model type field (bits 4-11) */
+const modelTypes = {
+    0x00: 'A',
+    0x01: 'B',
+    0x02: 'A+',
+    0x03: 'B+',
+    0x04: '2B',
+    0x05: 'Alpha',
+    0x06: 'CM1',
+    0x08: '3B',
+    0x09: 'Zero',
+    0x0a: 'CM3',
+    0x0c: 'Zero W',
+    0x0d: '3B+',
+    0x0e: '3A+',
+    0x10: 'CM3+',
+    0x11: '4B',
+    0x12: 'Zero 2 W',
+    0x13: 'Pi 400',
+    0x14: 'CM4',
+    0x15: 'CM4S',
+    0x17: '5',
+    0x18: 'CM5',
+    0x19: '500',
+    0x1a: 'CM5 Lite',
+};
+/** Lookup table for processor field (bits 12-15) */
+const processorTypes = {
+    0: 'BCM2835',
+    1: 'BCM2836',
+    2: 'BCM2837',
+    3: 'BCM2711',
+    4: 'BCM2712',
+};
+/** Lookup table for manufacturer field (bits 16-19) */
+const manufacturerTypes = {
+    0: 'Sony UK',
+    1: 'Egoman',
+    2: 'Embest',
+    3: 'Sony Japan',
+    4: 'Embest',
+    5: 'Stadium',
+};
+/** Lookup table for memory size field (bits 20-22) */
+const memoryTypes = {
+    0: '256MB',
+    1: '512MB',
+    2: '1GB',
+    3: '2GB',
+    4: '4GB',
+    5: '8GB',
+    6: '16GB',
+};
+/** @see https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes-in-use */
 exports.revisions = {
     '900021': { model: 'A+', ram: '512MB', manufacturer: 'Sony UK' },
     '900032': { model: 'B+', ram: '512MB', manufacturer: 'Sony UK' },
@@ -50,7 +103,18 @@ exports.revisions = {
     'd03140': { model: 'CM4', ram: '8GB', manufacturer: 'Sony UK' },
     '902120': { model: 'Zero 2 W', ram: '512MB', manufacturer: 'Sony UK' },
     'c04170': { model: '5', ram: '4GB', manufacturer: 'Sony UK' },
-    'd04170': { model: '5', ram: '8GB', manufacturer: 'Sony UK' }
+    'd04170': { model: '5', ram: '8GB', manufacturer: 'Sony UK' },
+    'b04171': { model: '5', revision: '1.1', ram: '2GB', manufacturer: 'Sony UK' },
+    'c04171': { model: '5', revision: '1.1', ram: '4GB', manufacturer: 'Sony UK' },
+    'd04171': { model: '5', revision: '1.1', ram: '8GB', manufacturer: 'Sony UK' },
+    'e04171': { model: '5', revision: '1.1', ram: '16GB', manufacturer: 'Sony UK' },
+    'b04180': { model: 'CM5', revision: '1.0', ram: '2GB', manufacturer: 'Sony UK' },
+    'c04180': { model: 'CM5', revision: '1.0', ram: '4GB', manufacturer: 'Sony UK' },
+    'd04180': { model: 'CM5', revision: '1.0', ram: '8GB', manufacturer: 'Sony UK' },
+    'd04190': { model: '500', revision: '1.0', ram: '8GB', manufacturer: 'Sony UK' },
+    'b041a0': { model: 'CM5 Lite', revision: '1.0', ram: '2GB', manufacturer: 'Sony UK' },
+    'c041a0': { model: 'CM5 Lite', revision: '1.0', ram: '4GB', manufacturer: 'Sony UK' },
+    'd041a0': { model: 'CM5 Lite', revision: '1.0', ram: '8GB', manufacturer: 'Sony UK' },
 };
 class RaspberryPiInfo {
     constructor(additionalRevisions = {}, raspberryPiBaseName = 'Raspberry Pi') {
@@ -72,23 +136,73 @@ class RaspberryPiInfo {
             if (revisionCode === null) {
                 return info;
             }
+            // First try the static revision map
             const revision = this.revisions[revisionCode];
-            if (!revision) {
+            if (revision) {
+                info.isRaspberry = true;
+                info.model = revision.model;
+                info.fullModelName = `${this.raspberryPiBaseName} ${info.model}`;
+                info.fullModelNameWithRam = `${this.raspberryPiBaseName} ${info.model} - ${revision.ram}`;
+                info.ram = revision.ram;
+                info.manufacturer = revision.manufacturer;
+                info.revisionCode = revisionCode;
                 return info;
             }
-            info.isRaspberry = true;
-            info.model = revision.model;
-            info.fullModelName = `${this.raspberryPiBaseName} ${info.model}`;
-            info.fullModelNameWithRam = `${this.raspberryPiBaseName} ${info.model} - ${revision.ram}`;
-            info.ram = revision.ram;
-            info.manufacturer = revision.manufacturer;
-            info.revisionCode = revisionCode;
+            // Fallback: decode the revision code using bit fields
+            const decoded = this.decodeRevisionCode(revisionCode);
+            if (decoded) {
+                info.isRaspberry = true;
+                info.model = decoded.model;
+                info.fullModelName = `${this.raspberryPiBaseName} ${info.model}`;
+                info.fullModelNameWithRam = `${this.raspberryPiBaseName} ${info.model} - ${decoded.ram}`;
+                info.ram = decoded.ram;
+                info.manufacturer = decoded.manufacturer;
+                info.revisionCode = revisionCode;
+                return info;
+            }
             return info;
         }
         catch (e) {
             // cpuinfo not found, prob not rpi
             return info;
         }
+    }
+    /**
+     * Decode a new-style revision code by extracting bit fields.
+     * This handles unknown revision codes that aren't in the static map,
+     * so new board revisions are automatically supported.
+     *
+     * Bit layout (new-style, bit 23 = 1):
+     *   Bits 0-3:   Board revision
+     *   Bits 4-11:  Model type
+     *   Bits 12-15: Processor
+     *   Bits 16-19: Manufacturer
+     *   Bits 20-22: Memory size
+     *   Bit 23:     New flag (must be 1)
+     *
+     * @see https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#new-style-revision-codes-in-use
+     */
+    decodeRevisionCode(revisionCode) {
+        var _a, _b;
+        const code = parseInt(revisionCode, 16);
+        if (isNaN(code)) {
+            return null;
+        }
+        // Check bit 23 — must be 1 for new-style revision codes
+        const isNewStyle = (code >> 23) & 0x1;
+        if (!isNewStyle) {
+            return null;
+        }
+        const modelType = (code >> 4) & 0xff;
+        const manufacturerId = (code >> 16) & 0xf;
+        const memoryId = (code >> 20) & 0x7;
+        const model = modelTypes[modelType];
+        if (!model) {
+            return null;
+        }
+        const ram = (_a = memoryTypes[memoryId]) !== null && _a !== void 0 ? _a : 'Unknown';
+        const manufacturer = (_b = manufacturerTypes[manufacturerId]) !== null && _b !== void 0 ? _b : 'Unknown';
+        return { model, ram, manufacturer };
     }
     readRevisionCode() {
         const cpuInfo = fs_1.default.readFileSync('/proc/cpuinfo', { encoding: 'utf8' });
